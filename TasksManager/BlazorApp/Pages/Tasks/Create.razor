@@ -1,0 +1,78 @@
+﻿@page "/Tasks/Create"
+@using BlazorApp.Models
+@using System.Text.Json.Nodes
+@inject HttpClient Http
+@inject NavigationManager navManager
+
+<div class="row">
+    <div class="col-lg-8">
+        <h1 class="mb-5">New Task</h1>
+
+        <div class="row-mb-3">
+            <label class="col-md-4 col-form-label">Title</label>
+            <div class="col-md-8">
+                <input class="form-control" @bind=TaskData.Title />
+                <span class="text-danger">@Errors["Title"]?[0]</span>
+            </div>
+        </div>
+        <div class="row-mb-3">
+            <label class="col-md-4 col-form-label">Description</label>
+            <div class="col-md-8">
+                <input class="form-control" @bind=TaskData.Description />
+                <span class="text-danger">@Errors["Description"]?[0]</span>
+            </div>
+        </div>
+        <div class="row-mb-3">
+            <label class="col-md-4 col-form-label">DueDate</label>
+            <div class="col-md-8">
+                <input type="date" class="form-control" @bind=TaskData.DueDate />
+                <span class="text-danger">@Errors["Due Date"]?[0]</span>
+            </div>
+        </div>
+        <div class="row-mb-3">
+            <label class="col-md-4 col-form-label">Is Completed</label>
+            <div class="col-md-8">
+                <input type="checkbox" class="form-check-input" @bind="TaskData.IsCompleted" />
+            </div>
+        </div>
+
+        <div class="row">
+            <div class="offset-md-4 col-md-4 d-grid">
+                <button class="btn btn-primary" @onclick="SaveTask">Submit</button>
+            </div>
+            <div class="col-md-4 d-grid">
+                <a class="btn btn-outline-primary" href="Tasks/">Cancel</a>
+            </div>
+        </div>
+    </div>
+</div>
+
+@code {
+    public TaskVM TaskData { set; get; } = new();
+    public JsonNode Errors { set; get; } = new JsonObject();
+
+    protected async Task SaveTask()
+    {
+        var response = await Http.PostAsJsonAsync("https://localhost:7233/api/Tasks/add-task", TaskData);
+
+        if (response.IsSuccessStatusCode)
+        {
+            navManager.NavigateTo("/Tasks");
+        }
+        else
+        {
+            var strResponse = await response.Content.ReadAsStringAsync();
+            Console.WriteLine("Json Response: \n" + strResponse);
+
+            try
+            {
+                var jsonResponse = JsonNode.Parse(strResponse);
+                Errors = jsonResponse?["errors"] ?? new JsonObject();
+            }
+            catch (Exception e)
+            {
+
+            }
+        }
+    }
+}

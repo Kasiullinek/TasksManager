@@ -1,0 +1,104 @@
+﻿@page "/Tasks/Edit/{Id:int}"
+@using BlazorApp.Models
+@using System.Text.Json.Nodes
+@inject HttpClient Http
+@inject NavigationManager navManager
+
+<div class="row">
+    <div class="col-lg-8">
+        <h1 class="mb-5">Edit Task</h1>
+
+        @if (task == null)
+        {
+            <p><em>Loading...</em></p>
+        }
+        else
+        {
+            <div class="row-mb-3">
+                <label class="col-md-4 col-form-label">Title</label>
+                <div class="col-md-8">
+                    <input class="form-control" @bind=taskData.Title />
+                    <span class="text-danger">@Errors["Title"]?[0]</span>
+                </div>
+            </div>
+            <div class="row-mb-3">
+                <label class="col-md-4 col-form-label">Description</label>
+                <div class="col-md-8">
+                    <input class="form-control" @bind=taskData.Description />
+                    <span class="text-danger">@Errors["Description"]?[0]</span>
+                </div>
+            </div>
+            <div class="row-mb-3">
+                <label class="col-md-4 col-form-label">DueDate</label>
+                <div class="col-md-8">
+                    <input type="date" class="form-control" @bind=taskData.DueDate />
+                    <span class="text-danger">@Errors["Due Date"]?[0]</span>
+                </div>
+            </div>
+            <div class="row-mb-3">
+                <label class="col-md-4 col-form-label">Is Completed</label>
+                <div class="col-md-8">
+                    <input type="checkbox" class="form-check-input" @bind="taskData.IsCompleted" />
+                </div>
+            </div>
+
+            <div class="row">
+                <div class="offset-md-4 col-md-4 d-grid">
+                    <button class="btn btn-primary" @onclick="SaveTask">Submit</button>
+                </div>
+                <div class="col-md-4 d-grid">
+                    <a class="btn btn-outline-primary" href="Tasks/">Cancel</a>
+                </div>
+            </div>
+        }
+    </div>
+</div>
+
+@code {
+    [Parameter]
+    public int Id { set; get; }
+    public TaskModel? task = null;
+    public TaskVM taskData { set; get; } = new();
+    public JsonNode Errors { set; get; } = new JsonObject();
+
+    protected override async Task OnParametersSetAsync()
+    {
+        try
+        {
+            task = await Http.GetFromJsonAsync<TaskModel>("https://localhost:7233/api/Tasks/get-task/" + Id);
+            taskData.Title = task?.Title ?? "";
+            taskData.Description = task?.Description ?? "";
+            taskData.DueDate = task?.DueDate ?? DateTime.Now;
+            taskData.IsCompleted = task?.IsCompleted ?? false;
+        }
+        catch (Exception e)
+        {
+
+        }
+    }
+
+    protected async Task SaveTask()
+    {
+        var response = await Http.PutAsJsonAsync("https://localhost:7233/api/Tasks/update-task/" + Id, taskData);
+
+        if (response.IsSuccessStatusCode)
+        {
+            navManager.NavigateTo("/Tasks");
+        }
+        else
+        {
+            var strResponse = await response.Content.ReadAsStringAsync();
+            Console.WriteLine("Json Response: \n" + strResponse);
+
+            try
+            {
+                var jsonResponse = JsonNode.Parse(strResponse);
+                Errors = jsonResponse?["errors"] ?? new JsonObject();
+            }
+            catch (Exception e)
+            {
+
+            }
+        }
+    }
+}

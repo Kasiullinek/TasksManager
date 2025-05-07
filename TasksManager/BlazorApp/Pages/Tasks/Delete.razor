@@ -1,0 +1,19 @@
+﻿@page "/Tasks/Delete/{Id:int}"
+@inject HttpClient Http
+@inject NavigationManager navManager
+
+<h1 class="mb-3">Delete Task</h1>
+<p>Are you sure you want to delete task with ID @Id?</p>
+<button class="btn btn-danger" @onclick="DeleteTask">Delete</button>
+<a class="btn btn-secondary" href="/Tasks">Cancel</a>
+
+@code {
+    [Parameter]
+    public int Id { set; get; }
+
+    protected async Task DeleteTask()
+    {
+        var response = await Http.DeleteAsync("https://localhost:7233/api/Tasks/remove-task/" + Id);
+        navManager.NavigateTo("/Tasks");
+    }
+}
